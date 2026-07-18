@@ -1,0 +1,12 @@
+{
+  "name": "civicconnect-mumbai",
+  "version": "1.0.0",
+  "private": true,
+  "description": "CivicConnect Mumbai — civic issue reporting SPA (map, severity, RBAC)",
+  "scripts": {
+    "start": "npx --yes serve . -p 5173",
+    "serve": "npx --yes serve ."
+  },
+  "keywords": ["civic", "mumbai", "leaflet", "smart-city"],
+  "license": "MIT"
+}

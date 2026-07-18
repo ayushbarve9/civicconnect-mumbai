@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CivicConnect Mumbai</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <header>
+    <div class="nav-container">
+      <a class="brand" href="./">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span class="brand-text">CivicConnect</span>
+      </a>
+      <div class="nav-right">
+        <span class="user-chip" id="navUserText">Guest</span>
+        <button type="button" class="btn-ghost" id="authActionButton">Sign in</button>
+        <button type="button" class="btn-primary" id="btnFileReport">File report</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <p class="brand-text">CivicConnect</p>
+      <h1>Mumbai civic pulse</h1>
+      <p>Report geotagged issues, rank by severity, and resolve by ward — citizens upvote, officers act.</p>
+      <div class="hero-controls">
+        <select id="areaDropdown" aria-label="Select area"></select>
+        <button type="button" class="btn-primary" id="btnZoomArea">Zoom to area</button>
+        <button type="button" class="btn-ghost" id="btnDetect">Use my location</button>
+      </div>
+    </section>
+
+    <section class="pulse-bar" id="wardBanner">
+      <div class="pulse-copy">
+        <h2 id="bannerWardTitle">Mumbai unified civic feed</h2>
+        <p id="bannerAlertText">Live cross-area incident streams with severity ranking.</p>
+      </div>
+      <div class="pulse-metrics">
+        <div class="pulse-stat">
+          <span>Active officer</span>
+          <strong id="bannerOfficer">Public stream</strong>
+        </div>
+        <div class="pulse-stat">
+          <span>Average AQI</span>
+          <strong id="bannerAqi">135 · Fair</strong>
+        </div>
+        <div class="pulse-stat">
+          <span>Alert</span>
+          <strong id="bannerAlertLevel">Nominal</strong>
+        </div>
+      </div>
+    </section>
+
+    <section class="workspace">
+      <div class="map-shell">
+        <div class="map-header">
+          <h3>Municipal map</h3>
+          <span class="map-meta" id="markerCountText">0 pins</span>
+        </div>
+        <div id="map" role="application" aria-label="Mumbai issues map"></div>
+        <p class="map-meta" style="margin-top:0.5rem">Click the map to drop a new report at that coordinate.</p>
+      </div>
+
+      <aside class="side-panel">
+        <div class="segmented">
+          <button type="button" class="seg-btn active" id="tabMumbai">Mumbai top 10</button>
+          <button type="button" class="seg-btn" id="tabArea">Local top issues</button>
+        </div>
+        <h3 id="panelTitle">Top 10 across Mumbai</h3>
+        <div style="padding: 0 1rem">
+          <div class="metric-label">Resolution this view</div>
+          <div class="metric-value" id="resolvedMetric">0 / 10 resolved</div>
+        </div>
+        <div class="metric-strip">
+          <div class="metric-fill" id="progressBar" style="width:0%"></div>
+        </div>
+        <div class="feed" id="topIssuesList"></div>
+      </aside>
+    </section>
+  </main>
+
+  <!-- Auth modal -->
+  <div class="modal" id="authModal" role="dialog" aria-modal="true" aria-labelledby="authTitle">
+    <div class="modal-backdrop"></div>
+    <div class="modal-sheet">
+      <button type="button" class="modal-close" id="closeAuth" aria-label="Close">&times;</button>
+      <h2 id="authTitle" style="font-size:1.125rem;margin-bottom:0.75rem">Account</h2>
+      <div class="auth-tabs">
+        <button type="button" class="auth-tab active" id="tabLoginMode">Sign in</button>
+        <button type="button" class="auth-tab" id="tabRegisterMode">Register</button>
+      </div>
+      <form id="authForm">
+        <div class="field">
+          <label class="field-label" for="authUsername">Username</label>
+          <input id="authUsername" type="text" required autocomplete="username" placeholder="admin" />
+        </div>
+        <div class="field">
+          <label class="field-label" for="authPassword">Password</label>
+          <input id="authPassword" type="password" required autocomplete="current-password" placeholder="••••••••" />
+        </div>
+        <div id="registrationFields" hidden>
+          <div class="field">
+            <label class="field-label" for="authRole">Role</label>
+            <select id="authRole">
+              <option value="Citizen">Citizen</option>
+              <option value="Ward Officer">Ward officer</option>
+              <option value="Admin">Admin</option>
+            </select>
+          </div>
+          <div class="field" id="regWardContainer" hidden>
+            <label class="field-label" for="authWardSelection">Assigned area</label>
+            <select id="authWardSelection"></select>
+          </div>
+        </div>
+        <p class="muted" style="margin-bottom:0.75rem">Demo: admin / officer1 / citizen1 — password <code>123</code></p>
+        <button type="submit" class="btn-primary" style="width:100%" id="authSubmitBtn">Sign in</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Report modal -->
+  <div class="modal" id="reportModal" role="dialog" aria-modal="true" aria-labelledby="reportTitle">
+    <div class="modal-backdrop"></div>
+    <div class="modal-sheet">
+      <button type="button" class="modal-close" id="closeReport" aria-label="Close">&times;</button>
+      <h2 id="reportTitle" style="font-size:1.125rem;margin-bottom:1rem">File civic report</h2>
+      <form id="reportForm">
+        <div class="field">
+          <label class="field-label" for="formTitle">Summary</label>
+          <input id="formTitle" type="text" required placeholder="e.g. Deep pothole on SV Road" />
+        </div>
+        <div class="form-row">
+          <div class="field">
+            <label class="field-label" for="formCategory">Category</label>
+            <select id="formCategory"></select>
+          </div>
+          <div class="field">
+            <label class="field-label" for="formArea">Area</label>
+            <select id="formArea"></select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="field">
+            <label class="field-label" for="formLat">Latitude</label>
+            <input id="formLat" type="number" step="any" required />
+          </div>
+          <div class="field">
+            <label class="field-label" for="formLng">Longitude</label>
+            <input id="formLng" type="number" step="any" required />
+          </div>
+        </div>
+        <div class="field">
+          <label class="field-label" for="formPhoto">Photo (AI classifies)</label>
+          <label class="photo-drop" for="formPhoto">Drop or choose a street photo — YOLOv8 sim runs client-side</label>
+          <input id="formPhoto" type="file" accept="image/*" style="display:none" />
+          <img id="photoPreview" class="photo-preview" alt="Preview" hidden />
+          <div id="aiResult" class="ai-result" hidden></div>
+        </div>
+        <button type="submit" class="btn-primary" style="width:100%">Submit report</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Issue drawer -->
+  <aside class="drawer" id="issueDrawer" aria-label="Issue details">
+    <div class="drawer-header">
+      <span class="brand-text" style="font-size:1rem">Issue</span>
+      <button type="button" class="modal-close" id="closeDrawer" aria-label="Close drawer" style="position:static">&times;</button>
+    </div>
+    <div id="drawerBody"></div>
+  </aside>
+
+  <div class="toast" id="toast" role="status"></div>
+
+  <footer>
+    © 2026 CivicConnect Mumbai · Severity = base + upvotes + age + location · Demo SPA ahead of MERN backend
+  </footer>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/severity.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
